@@ -1,17 +1,26 @@
 // api/simulate.js
 const webpush = require('web-push');
+const { setCorsHeaders, handleOptions, parseJsonBody, DEFAULT_VAPID } = require('./_utils');
 
-const setVapid = () => {
-  if (!process.env.VAPID_PUBLIC || !process.env.VAPID_PRIVATE) {
-    throw new Error('VAPID env vars missing');
-  }
-  webpush.setVapidDetails('mailto:tu@correo', process.env.VAPID_PUBLIC, process.env.VAPID_PRIVATE);
-};
+function setVapid() {
+  const publicKey = process.env.VAPID_PUBLIC || DEFAULT_VAPID.publicKey;
+  const privateKey = process.env.VAPID_PRIVATE || DEFAULT_VAPID.privateKey;
+  webpush.setVapidDetails('mailto:tu@correo', publicKey, privateKey);
+}
 
 module.exports = async (req, res) => {
-  if (req.method !== 'POST') return res.status(405).end();
-  const { subscription } = req.body || {};
+  if (handleOptions(req, res)) return;
+  setCorsHeaders(req, res);
 
+  if (req.method !== 'POST') return res.status(405).end();
+
+  let body;
+  try { body = await parseJsonBody(req); } catch (err) {
+    console.error('Invalid JSON body', err);
+    return res.status(400).json({ error: 'Invalid JSON body' });
+  }
+
+  const subscription = body && body.subscription;
   if (!subscription || !subscription.endpoint) {
     return res.status(400).json({ error: 'Provide subscription in body to simulate (for easy setup)' });
   }
