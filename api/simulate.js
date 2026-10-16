@@ -22,7 +22,8 @@ module.exports = async (req, res) => {
 
   const subscription = body && body.subscription;
   if (!subscription || !subscription.endpoint) {
-    return res.status(400).json({ error: 'Provide subscription in body to simulate (for easy setup)' });
+    // No subscription provided: respond OK so frontend can operate without subscribe
+    return res.json({ sent: false, note: 'No subscription provided; nothing to send. To test push, use /api/subscribe or provide a subscription in the request body.' });
   }
 
   try {
